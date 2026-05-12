@@ -82,7 +82,7 @@ nav.scrolled{background:rgba(10,13,20,.92);backdrop-filter:blur(12px);border-bot
 .nav-links a,.nav-links button{color:var(--muted);text-decoration:none;font-size:.84rem;font-weight:500;transition:color .2s;background:none;border:none;cursor:pointer;font-family:'Sora',sans-serif;padding:0;position:relative}
 .nav-links a::after{content:'';position:absolute;bottom:-4px;left:0;width:0;height:1px;background:var(--accent);transition:width .25s}.nav-links a:hover{color:var(--text)}.nav-links a:hover::after{width:100%}.nav-links button:hover{color:var(--text)}
 .dropdown{position:relative}.dropdown-menu{position:absolute;top:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(-8px);background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:.6rem;min-width:250px;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s,transform .25s;box-shadow:0 20px 50px rgba(0,0,0,.5)}
-.dropdown:hover .dropdown-menu{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+.dropdown:hover .dropdown-menu,.dropdown.open .dropdown-menu{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
 .dropdown-menu a{display:block;padding:.55rem 1rem;border-radius:8px;font-size:.84rem;color:var(--light-muted);text-decoration:none;transition:background .15s,color .15s;cursor:pointer}.dropdown-menu a:hover{background:rgba(34,211,160,.1);color:var(--accent)}
 .nav-cta{display:flex;gap:.65rem;align-items:center}
 
@@ -177,6 +177,19 @@ footer{background:var(--bg2);border-top:1px solid var(--border);padding:3.5rem 5
 @media(max-width:900px){.nav-links{display:none}.nav-cta .btn-ghost{display:none}.mobile-menu-btn{display:block}.hero-inner{max-width:100%}.hero-image-strip{display:none}.why-grid{grid-template-columns:repeat(2,1fr)}.contact-grid{grid-template-columns:1fr}.footer-grid{grid-template-columns:1fr 1fr}.service-detail-grid{grid-template-columns:1fr}.register-steps{grid-template-columns:1fr}.packages-grid{grid-template-columns:1fr}.img-feature-row{grid-template-columns:1fr}.img-feature-row.reverse{direction:ltr}.compare-cols,.compare-row{grid-template-columns:1.2fr 1fr 1fr;font-size:.8rem}}
 @media(max-width:767px){.compare-table{border-radius:16px}.compare-cols,.compare-row{grid-template-columns:1fr;gap:.4rem;padding:1.2rem 1.5rem}.compare-col-head,.compare-cell{text-align:left}.compare-row{border-bottom:1px solid var(--border)}.compare-row:last-child{border-bottom:none}.compare-feat{font-weight:600;color:var(--text);margin-bottom:.4rem}}
 @media(max-width:600px){nav{padding:.65rem 4%}.logo{font-size:1.15rem}.nav-cta .btn-primary{font-size:.78rem;padding:.45rem .8rem}.mobile-menu-btn{padding:.4rem}.hero{min-height:100dvh;padding:6rem 4% 3rem;align-items:flex-start;padding-top:5.5rem}.hero h1{font-size:clamp(1.7rem,7vw,2.4rem)}.hero>.hero-inner>p{font-size:.88rem;margin-bottom:1.5rem}.hero-actions{flex-direction:column;width:100%}.hero-actions .btn-primary-lg,.hero-actions .btn-outline-lg{width:100%;justify-content:center;text-align:center}.hero-stats{gap:1.2rem;width:100%}.stat-divider{display:none}.hero-ring,.hero-ring2{display:none}section{padding:3.5rem 4%}.section-title{font-size:clamp(1.5rem,6vw,2rem)}.features-grid{grid-template-columns:1fr;gap:1rem}.packages-grid{grid-template-columns:1fr}.why-grid{grid-template-columns:1fr}.compare-cols,.compare-row{grid-template-columns:1fr;gap:.3rem}.compare-col-head,.compare-cell{text-align:left}.testi-grid{grid-template-columns:1fr}.cta-inner{padding:2.5rem 1.5rem;border-radius:16px}.cta-actions{flex-direction:column;align-items:center}.cta-actions .btn-primary-lg,.cta-actions .btn-outline-lg{width:100%;justify-content:center}.footer-grid{grid-template-columns:1fr;gap:2rem}.footer-bottom{flex-direction:column;text-align:center}.form-row{grid-template-columns:1fr}.register-form-wrap{padding:1.5rem 1.2rem;border-radius:16px}.page-hero{padding:6rem 4% 2.5rem}.page-hero-title{font-size:clamp(1.5rem,6vw,2.4rem)}.gallery-strip{grid-template-columns:repeat(2,1fr);gap:.5rem}.visual-banner{aspect-ratio:4/3;border-radius:14px}.contact-form-wrap{padding:1.5rem}.mobile-nav{top:52px}.package-card{padding:1.5rem}.service-block{padding:1.4rem}.service-detail-hero{padding:6rem 4% 2.5rem}#registerFormBody div[style*="grid-template-columns: 1fr 1fr"]{grid-template-columns:1fr !important}}
+
+/* FIX #2: Accessibility - Respect User's Reduced Motion Preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  html { scroll-behavior: auto !important; }
+  .marquee-track { animation: none !important; }
+  [data-reveal] { opacity: 1 !important; transform: none !important; }
+  .hero-badge::before { animation: none !important; }
+}
 </style>
 </head>
 <body>
@@ -234,6 +247,8 @@ function initParticles(){
   if(!canvas)return;
   const ctx=canvas.getContext('2d');
   let W,H,particles=[],mouse={x:-9999,y:-9999};
+  let animFrameId=null, isDrawing=false;
+  
   function resize(){W=canvas.width=canvas.parentElement.offsetWidth;H=canvas.height=canvas.parentElement.offsetHeight}
   resize();window.addEventListener('resize',resize,{passive:true});
   const hero=canvas.closest('.hero');
@@ -243,6 +258,7 @@ function initParticles(){
   for(let i=0;i<count;i++)particles.push({x:Math.random()*(W||1400),y:Math.random()*(H||900),vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.4+.5,a:Math.random()*.45+.2});
   const connDist=110,connDistSq=connDist*connDist;
   let frame=0;
+  
   function draw(){
     ctx.clearRect(0,0,W,H);
     for(let i=0;i<particles.length;i++){
@@ -266,9 +282,20 @@ function initParticles(){
         }
       }
     }
-    requestAnimationFrame(draw);
+    animFrameId=requestAnimationFrame(draw);
   }
-  draw();
+  
+  // FIX #4: Pause canvas when hero is not visible to save CPU/Battery
+  function startDrawing(){if(!isDrawing){isDrawing=true;draw()}}
+  function stopDrawing(){isDrawing=false;if(animFrameId){cancelAnimationFrame(animFrameId);animFrameId=null}}
+  
+  if(hero){
+    const pObserver=new IntersectionObserver(([entry])=>{
+      if(entry.isIntersecting)startDrawing();else stopDrawing();
+    },{threshold:0});
+    pObserver.observe(hero);
+  }
+  startDrawing();
 }
 
 function initReveal(){
@@ -329,7 +356,55 @@ function toggleFaq(el){const item=el.parentElement,isOpen=item.classList.contain
 function submitContact(){$('#contactForm').style.display='none';$('#contactSuccess').style.display='block';$('#contactSuccess').focus()}
 function submitRegister(){$('#registerFormBody').style.display='none';$('#registerSuccess').style.display='block';$('#registerSuccess').focus();window.scrollTo({top:0,behavior:'smooth'})}
 
-document.addEventListener("DOMContentLoaded",()=>{if(window.scrollY>40)mainNav.classList.add("scrolled");showPage("home")});
+document.addEventListener("DOMContentLoaded",()=>{
+  if(window.scrollY>40)mainNav.classList.add("scrolled");
+  showPage("home");
+  
+  // FIX #1: Keyboard accessibility for clickable cards and role="link" elements
+  document.addEventListener('keydown', function(e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.feature-card, [role="link"]')) {
+      e.preventDefault();
+      e.target.click();
+    }
+  });
+
+  // FIX #3: Keyboard accessible dropdown menu
+  const dropdownBtn = document.querySelector('.dropdown > button');
+  const dropdown = document.querySelector('.dropdown');
+  
+  if (dropdownBtn && dropdown) {
+    dropdownBtn.addEventListener('click', () => {
+      const isOpen = dropdown.classList.toggle('open');
+      dropdownBtn.setAttribute('aria-expanded', isOpen);
+    });
+    
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dropdown.classList.contains('open')) {
+        dropdown.classList.remove('open');
+        dropdownBtn.setAttribute('aria-expanded', 'false');
+        dropdownBtn.focus();
+      }
+    });
+    
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target) && dropdown.classList.contains('open')) {
+        dropdown.classList.remove('open');
+        dropdownBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  // FIX #5: Close mobile nav when clicking the overlay background
+  const mobileNav = $('#mobileNav');
+  if (mobileNav) {
+    mobileNav.addEventListener('click', (e) => {
+      // If the user clicks the background container directly, not a child element like a link
+      if (e.target === mobileNav) {
+        closeMobile();
+      }
+    });
+  }
+});
 </script>
 </body>
 </html>
